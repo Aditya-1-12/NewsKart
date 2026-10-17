@@ -12,9 +12,13 @@ export default function News({ category }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Fetch articles from News API using the Fetch API
+  // Fetch articles using the Fetch API.
+  // Locally: call News API directly with the key from .env
+  // Live (Netlify): call our serverless function, which holds the key safely
   const fetchNews = async (pageNo) => {
-    const url = `https://newsapi.org/v2/top-headlines?country=us&category=${category}&page=${pageNo}&pageSize=${PAGE_SIZE}&apiKey=${API_KEY}`;
+    const url = import.meta.env.DEV
+      ? `https://newsapi.org/v2/top-headlines?country=us&category=${category}&page=${pageNo}&pageSize=${PAGE_SIZE}&apiKey=${API_KEY}`
+      : `/.netlify/functions/news?category=${category}&page=${pageNo}&pageSize=${PAGE_SIZE}`;
     const response = await fetch(url);
     const data = await response.json();
     if (data.status !== "ok") {
