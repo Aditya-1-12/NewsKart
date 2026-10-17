@@ -1,99 +1,73 @@
+
 import { useEffect, useState } from "react";
-import InfiniteScroll from "react-infinite-scroll-component";
 import NewsItem from "./NewsItem.jsx";
 
 const API_KEY = import.meta.env.VITE_NEWS_API_KEY;
-const PAGE_SIZE = 12;
 
 export default function News({ category }) {
+  // Store the news articles
   const [articles, setArticles] = useState([]);
-  const [page, setPage] = useState(1);
-  const [totalResults, setTotalResults] = useState(0);
+
+  // Track loading
   const [loading, setLoading] = useState(true);
+
+  // Store error messages
   const [error, setError] = useState("");
 
-  // Fetch articles using the Fetch API.
-  // Locally: call News API directly with the key from .env
-  // Live (Netlify): call our serverless function, which holds the key safely
-  const fetchNews = async (pageNo) => {
-    const url = import.meta.env.DEV
-      ? `https://newsapi.org/v2/top-headlines?country=us&category=${category}&page=${pageNo}&pageSize=${PAGE_SIZE}&apiKey=${API_KEY}`
-      : `/.netlify/functions/news?category=${category}&page=${pageNo}&pageSize=${PAGE_SIZE}`;
-    const response = await fetch(url);
-    const data = await response.json();
-    if (data.status !== "ok") {
-      throw new Error(data.message || "Could not load news");
-    }
-    return data;
-  };
-
-  // Load the first page whenever the category changes
+  // Get news from the API
   useEffect(() => {
-    setLoading(true);
-    setError("");
-    setArticles([]);
-    setPage(1);
+    const fetchNews = async () => {
+      setLoading(true);
+      setError("");
 
-    fetchNews(1)
-      .then((data) => {
+      try {
+        const url =
+          `https://newsapi.org/v2/top-headlines` +
+          `?country=us&category=${category}` +
+          `&pageSize=12&apiKey=${API_KEY}`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.status !== "ok") {
+          throw new Error(data.message || "Could not load news");
+        }
+
         setArticles(data.articles);
-        setTotalResults(data.totalResults);
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [category]);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Load the next page when the user scrolls down
-  const loadMore = async () => {
-    const nextPage = page + 1;
-    try {
-      const data = await fetchNews(nextPage);
-      setArticles((prev) => prev.concat(data.articles));
-      setPage(nextPage);
-    } catch (err) {
-      setError(err.message);
-    }
-  };
+    fetchNews();
+  }, [category]);
 
   return (
     <div className="container my-4">
       <h4 className="text-center mb-4">
-        Top {category.charAt(0).toUpperCase() + category.slice(1)} Headlines
+        Top {category} Headlines
       </h4>
 
-      {error && <div className="alert alert-danger">{error}</div>}
+      {loading && <p>Loading news...</p>}
 
-      {loading && (
-        <div className="text-center my-5">
-          <div className="spinner-border" role="status" />
-        </div>
-      )}
+      {error && <p className="text-danger">{error}</p>}
 
-      <InfiniteScroll
-        dataLength={articles.length}
-        next={loadMore}
-        hasMore={articles.length < totalResults}
-        loader={
-          <div className="text-center my-4">
-            <div className="spinner-border spinner-border-sm" role="status" />
+      <div className="row g-4">
+        {articles.map((article, index) => (
+          <div className="col-12 col-md-6 col-lg-4" key={index}>
+            <NewsItem
+              title={article.title}
+              description={article.description}
+              imageUrl={article.urlToImage}
+              url={article.url}
+              source={article.source?.name}
+              date={article.publishedAt}
+            />
           </div>
-        }
-      >
-        <div className="row g-4">
-          {articles.map((a, index) => (
-            <div className="col-12 col-md-6 col-lg-4" key={a.url + index}>
-              <NewsItem
-                title={a.title}
-                description={a.description}
-                imageUrl={a.urlToImage}
-                url={a.url}
-                source={a.source.name}
-                date={a.publishedAt}
-              />
-            </div>
-          ))}
-        </div>
-      </InfiniteScroll>
+        ))}
+      </div>
     </div>
   );
 }
