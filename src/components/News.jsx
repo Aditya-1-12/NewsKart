@@ -5,16 +5,16 @@ import NewsItem from "./NewsItem.jsx";
 const API_KEY = import.meta.env.VITE_NEWS_API_KEY;
 
 export default function News({ category }) {
-  // Store the news articles
+  // store the news articles
   const [articles, setArticles] = useState([]);
 
-  // Track loading
+  // track loading
   const [loading, setLoading] = useState(true);
 
-  // Store error messages
+  // store error messages
   const [error, setError] = useState("");
 
-  // Get news from the API
+  // get news from the API
   useEffect(() => {
     const fetchNews = async () => {
       setLoading(true);
